@@ -24,7 +24,7 @@ from plugin_manager import PluginManager
 # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
 GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125")
-GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613", "gpt-4-turbo-preview")
+GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613", "gpt-4-turbo-preview", "meta-llama/Meta-Llama-3-8B-Instruct", "meta-llama/Meta-Llama-3-70B-Instruct", "google/gemma-2-27b-it")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
 GPT_4_128K_MODELS = ("gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview", "gpt-4-turbo", "gpt-4-turbo-2024-04-09")
@@ -41,7 +41,7 @@ def default_max_tokens(model: str) -> int:
     if model in GPT_3_MODELS:
         return base
     elif model in GPT_4_MODELS:
-        return base * 2
+        return 8000
     elif model in GPT_3_16K_MODELS:
         if model == "gpt-3.5-turbo-1106":
             return 4096
@@ -233,8 +233,17 @@ class OpenAIHelper:
 
             # Summarize the chat history if it's too long to avoid excessive token usage
             token_count = self.__count_tokens(self.conversations[chat_id])
-            exceeded_max_tokens = token_count + self.config['max_tokens'] > self.__max_model_tokens()
+            exceeded_max_tokens = token_count > self.__max_model_tokens()
             exceeded_max_history_size = len(self.conversations[chat_id]) > self.config['max_history_size']
+
+            # print(f"Token count: {token_count}")
+            # print(f"Max tokens: {self.config['max_tokens']}")
+            # print(f"Max model tokens: {self.__max_model_tokens()}")
+            # print(f"len conversations: {len(self.conversations[chat_id])}")
+            # print(f"max history size: {self.config['max_history_size']}")
+
+            # print(f"Exceeded max tokens: {exceeded_max_tokens}")
+            # print(f"Exceeded max history size: {exceeded_max_history_size}")
 
             if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
@@ -248,6 +257,7 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
+            
             common_args = {
                 'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
                 'messages': self.conversations[chat_id],
@@ -653,7 +663,7 @@ class OpenAIHelper:
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            encoding = tiktoken.get_encoding("gpt-3.5-turbo")
+            encoding = tiktoken.get_encoding("cl100k_base")
 
         if model in GPT_3_MODELS + GPT_3_16K_MODELS:
             tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n

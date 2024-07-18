@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import io
+import random
 
 from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
@@ -59,6 +60,8 @@ class ChatGPTTelegramBot:
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
+        self.chat_history = {}  # Добавьте эту строку
+
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -657,27 +660,41 @@ class ChatGPTTelegramBot:
             f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
-        prompt = message_text(update.message)
+        message_text = update.message.text
+        prompt = f"сообщение от {update.message.from_user.name}: {message_text}"
         self.last_message[chat_id] = prompt
 
         if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
+            
+            # Save message to history
+            if chat_id not in self.chat_history:
+                self.chat_history[chat_id] = []
+            self.chat_history[chat_id].append(prompt)
 
-            if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
-                if prompt.lower().startswith(trigger_keyword.lower()):
+            print(self.chat_history)
+            
+            # Check if the message starts with the trigger keyword
+            if message_text.lower().startswith(trigger_keyword.lower()) or message_text.lower().startswith('/chat'):
+                if message_text.lower().startswith(trigger_keyword.lower()):
                     prompt = prompt[len(trigger_keyword):].strip()
-
-                if update.message.reply_to_message and \
-                        update.message.reply_to_message.text and \
-                        update.message.reply_to_message.from_user.id != context.bot.id:
-                    prompt = f'"{update.message.reply_to_message.text}" {prompt}'
+                
+                await self.process_and_reply(update, context, chat_id, user_id, prompt)
+                
+                self.chat_history = {}
             else:
-                if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
-                    logging.info('Message is a reply to the bot, allowing...')
+                # Respond with 1/4 probability if not directly addressed
+                if random.random() < 0.25:
+                    full_prompt = "\n".join(self.chat_history[chat_id])  # Use last 5 messages for context
+                    await self.process_and_reply(update, context, chat_id, user_id, full_prompt)
+                    
+                    self.chat_history = {}
                 else:
-                    logging.warning('Message does not start with trigger keyword, ignoring...')
                     return
+        else:
+            await self.process_and_reply(update, context, chat_id, user_id, prompt)
 
+    async def process_and_reply(self, update, context, chat_id, user_id, prompt):
         try:
             total_tokens = 0
 
@@ -708,7 +725,7 @@ class ChatGPTTelegramBot:
                             stream_chunk += 1
                             try:
                                 await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                              stream_chunks[-2])
+                                                            stream_chunks[-2])
                             except:
                                 pass
                             try:
@@ -727,7 +744,7 @@ class ChatGPTTelegramBot:
                         try:
                             if sent_message is not None:
                                 await context.bot.delete_message(chat_id=sent_message.chat_id,
-                                                                 message_id=sent_message.message_id)
+                                                                message_id=sent_message.message_id)
                             sent_message = await update.effective_message.reply_text(
                                 message_thread_id=get_thread_id(update),
                                 reply_to_message_id=get_reply_to_message_id(self.config, update),
@@ -742,7 +759,7 @@ class ChatGPTTelegramBot:
                         try:
                             use_markdown = tokens != 'not_finished'
                             await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                          text=content, markdown=use_markdown)
+                                                        text=content, markdown=use_markdown)
 
                         except RetryAfter as e:
                             backoff += 5
