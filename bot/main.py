@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from plugin_manager import PluginManager
 from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
+from background import keep_alive  #импорт функции для поддержки работоспособности
 
 
 def main():
@@ -121,6 +122,8 @@ def main():
     plugin_manager = PluginManager(config=plugin_config)
     openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
     telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
+    keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
+
     telegram_bot.run()
 
 
