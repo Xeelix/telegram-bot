@@ -679,7 +679,8 @@ class ChatGPTTelegramBot:
                 if message_text.lower().startswith(trigger_keyword.lower()):
                     prompt = prompt[len(trigger_keyword):].strip()
                 
-                await self.process_and_reply(update, context, chat_id, user_id, prompt)
+                full_prompt = "\n".join(self.chat_history[chat_id])  # Use last 5 messages for context
+                await self.process_and_reply(update, context, chat_id, user_id, full_prompt)
                 
                 self.chat_history = {}
             else:

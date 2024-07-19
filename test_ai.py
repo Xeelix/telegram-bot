@@ -25,7 +25,7 @@ def send_ai_request(prompt):
         return f"Error: {response.status_code}, {response.text}"
 
 if __name__ == '__main__':
-    test_prompt = "What is the capital of France? send joke"
+    test_prompt = "who r u"
     result = send_ai_request(test_prompt)
     print(f"Prompt: {test_prompt}")
     print(f"Response: {result}")

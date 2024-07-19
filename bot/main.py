@@ -85,7 +85,7 @@ def main():
     print(f"Debug - Token being used: {token}")  # Add this line
 
     telegram_config = {
-        'token': "7111699077:AAH5gWTw3JVNjsOTJSDgAJSwaKGNyYFV9DM",
+        'token': token,
         'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',

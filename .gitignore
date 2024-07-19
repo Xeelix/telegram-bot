@@ -6,4 +6,4 @@ __pycache__
 venv
 /.cache
 
-send_messages.py
+send_msg.py
