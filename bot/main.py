@@ -10,7 +10,7 @@ from telegram_bot import ChatGPTTelegramBot
 
 def main():
     # Read .env file
-    load_dotenv()
+    load_dotenv(override=True)
 
     # Setup logging
     logging.basicConfig(
@@ -30,6 +30,13 @@ def main():
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
+
+    print("\n\n")
+    print(f"api_key: {os.environ['OPENAI_API_KEY']}")
+    print(f"base_url: {os.environ['OPENAI_BASE_URL']}")
+    print(f"model: {os.environ['OPENAI_MODEL']}")
+    print("\n\n")
+
     openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
@@ -73,8 +80,12 @@ def main():
         logging.warning('The environment variable MONTHLY_GUEST_BUDGET is deprecated. '
                         'Please use GUEST_BUDGET with BUDGET_PERIOD instead.')
 
+    token = os.environ['TELEGRAM_BOT_TOKEN']
+
+    print(f"Debug - Token being used: {token}")  # Add this line
+
     telegram_config = {
-        'token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'token': "7111699077:AAH5gWTw3JVNjsOTJSDgAJSwaKGNyYFV9DM",
         'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
