@@ -1,6 +1,7 @@
 import os
 import requests
 
+
 def send_ai_request(prompt):
     api_key = os.getenv('OPENAI_API_KEY')
     base_url = os.getenv('OPENAI_BASE_URL')
